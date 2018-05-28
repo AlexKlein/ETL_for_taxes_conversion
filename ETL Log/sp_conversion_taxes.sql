@@ -1,22 +1,14 @@
-2015-10-26_13:56:27,370    Process started                    Конвертация сделок налоговой отчетности (sp_conversion_taxes, Конвертация сделок налоговой отчетности, )
-2015-10-26_13:56:27,473    Activity started                Поток данных Получение CLOSEDPERIOD (DataflowDF_GET_CLOSEDPERIOD_BY_MAX, Поток данных Получение CLOSEDPERIOD, )
-2015-10-26_13:56:27,569    Activity started                Получение CURRENCY_UK по ISO_CCODE (RUR) (DataflowTemplatedf_get_currency_uk_by_iso_ccode, Получение CURRENCY_UK по ISO_CCODE (RUR), )
-2015-10-26_13:56:27,594    Activity started                Поток данных Получение ключевых слов Oracle в качестве параметров для построения запросов (DataflowDF_GET_LANG_PARAM, Поток данных Получение ключевых слов Oracle в качестве параметров для построения запросов, )
-2015-10-26_13:56:27,645    Activity succeeded                Поток данных Получение CLOSEDPERIOD (DataflowDF_GET_CLOSEDPERIOD_BY_MAX, Поток данных Получение CLOSEDPERIOD, )    Query text:
 ------------------
 select 'to_date(''' ||
        to_char (
-          nvl (max (closedtaxperiod_mtran_1.end_date),
+          nvl (max (closedtaxperiod_1.end_date),
                to_date ('19000101', 'yyyyMMdd')),
           'yyyyMMdd')||
        ''', ''yyyyMMdd'')'
           as closedperiod
-from   dmfrtax.closedtaxperiod_mtran closedtaxperiod_mtran_1
-where  (closedtaxperiod_mtran_1.deleted_flag = 'N') and
-       (closedtaxperiod_mtran_1.closed_flag = 'Y')
-    Rows processed:    1
-    Execution time:    00:00:00,051
-2015-10-26_13:56:27,676    Activity succeeded                Поток данных Получение ключевых слов Oracle в качестве параметров для построения запросов (DataflowDF_GET_LANG_PARAM, Поток данных Получение ключевых слов Oracle в качестве параметров для построения запросов, )    Query text:
+from   dm_taxs.closedtaxperiod closedtaxperiod_1
+where  (closedtaxperiod_1.deleted_flag = 'N') and
+       (closedtaxperiod_1.closed_flag = 'Y')
 ------------------
 select 'PARTITION' as ml_partition,
        'BY' as ml_by,
@@ -27,38 +19,27 @@ select 'PARTITION' as ml_partition,
        'NULLS LAST' as ml_nulls_last,
        'NULLS FIRST' as ml_nulls_first
 from   dual
-    Rows processed:    1
-    Execution time:    00:00:00,082
-2015-10-26_13:56:28,699    Activity succeeded                Получение CURRENCY_UK по ISO_CCODE (RUR) (DataflowTemplatedf_get_currency_uk_by_iso_ccode, Получение CURRENCY_UK по ISO_CCODE (RUR), )    Query text:
 ------------------
-select currency_sdim_2.uk as currency_uk
-from   (select currency_sdim_1.iso_ccode as iso_ccode,
-               max (currency_sdim_1.as_of_day) as as_of_day
-        from   dmfr.currency_sdim currency_sdim_1
-        where  (nvl (currency_sdim_1.default_flag, 'N') != 'Y') and
-               (nvl (currency_sdim_1.deleted_flag, 'N') != 'Y')
-        group by currency_sdim_1.iso_ccode) iso_ccode
-       inner join dmfr.currency_sdim currency_sdim_2
-          on iso_ccode.iso_ccode = currency_sdim_2.iso_ccode and
-             iso_ccode.as_of_day = currency_sdim_2.as_of_day and
-             nvl (currency_sdim_2.default_flag, 'N') != 'Y' and
-             nvl (currency_sdim_2.deleted_flag, 'N') != 'Y'
+select currency_2.uk as currency_uk
+from   (select currency_1.iso_ccode as iso_ccode,
+               max (currency_1.as_of_day) as as_of_day
+        from   main.currency currency_1
+        where  (nvl (currency_1.default_flag, 'N') != 'Y') and
+               (nvl (currency_1.deleted_flag, 'N') != 'Y')
+        group by currency_1.iso_ccode) iso_ccode
+       inner join main.currency currency_2
+          on iso_ccode.iso_ccode = currency_2.iso_ccode and
+             iso_ccode.as_of_day = currency_2.as_of_day and
+             nvl (currency_2.default_flag, 'N') != 'Y' and
+             nvl (currency_2.deleted_flag, 'N') != 'Y'
 where  (upper (trim (iso_ccode.iso_ccode)) = 'RUR')
-    Rows processed:    1
-    Execution time:    00:00:01,105
-2015-10-26_13:56:28,722    Activity started                Очищение таблицы схемы DMFRTAX (CONVPURCHASE_PROC) (DataflowTemplatedft_truncate_table_dmfrtax, Очищение таблицы схемы DMFRTAX (CONVPURCHASE_PROC), )
-2015-10-26_13:56:28,775    Activity succeeded                Очищение таблицы схемы DMFRTAX (CONVPURCHASE_PROC) (DataflowTemplatedft_truncate_table_dmfrtax, Очищение таблицы схемы DMFRTAX (CONVPURCHASE_PROC), )    Query text:
 ------------------
 declare
 begin
-   dmfrtax.truncate_table ('CONVPURCHASE_PROC');
+   dm_taxs.truncate_table ('CONVPURCHASE_PROC');
 end;
-    Rows processed:    0
-    Execution time:    00:00:00,053
-2015-10-26_13:56:28,827    Activity started                Поток данных Загрузка convpurchase_proc (DataflowDF_LOAD_CONVPURCHASE_PROC, Поток данных Загрузка convpurchase_proc, )
-2015-10-26_13:56:29,447    Activity succeeded                Поток данных Загрузка convpurchase_proc (DataflowDF_LOAD_CONVPURCHASE_PROC, Поток данных Загрузка convpurchase_proc, )    Query text:
 ------------------
-insert into dmfrtax.convpurchase_proc (deal_back_ref,
+insert into dm_taxs.convpurchase_proc (deal_back_ref,
                                        deal_couponaccount_cur_amt,
                                        deal_couponacct_cur_old_amt,
                                        deal_cur_amt,
@@ -101,85 +82,85 @@ insert into dmfrtax.convpurchase_proc (deal_back_ref,
           convpurchase_proc.currency_pay_uk as currency_pay_uk,
           convpurchase_proc.currency_uk as currency_uk
    from   (select convsumrealiz.link_ncode as link_ncode,
-                  dealsecurity_act_shist_14.deal_uk as deal_uk,
-                  dealsecurity_act_shist_14.issuesecurity_uk
+                  dealsecurity_act_14.deal_uk as deal_uk,
+                  dealsecurity_act_14.issuesecurity_uk
                      as issuesecurity_uk,
-                  dealsecurity_act_shist_14.oper_date as oper_date,
-                  dealsecurity_act_shist_14.currency_issue_uk
+                  dealsecurity_act_14.oper_date as oper_date,
+                  dealsecurity_act_14.currency_issue_uk
                      as currency_issue_uk,
-                  dealsecurity_act_shist_14.currency_pay_uk
+                  dealsecurity_act_14.currency_pay_uk
                      as currency_pay_uk,
-                  dealsecurity_act_shist_14.currency_uk as currency_uk,
-                  dealsecurity_act_shist_14.reg_actual_date
+                  dealsecurity_act_14.currency_uk as currency_uk,
+                  dealsecurity_act_14.reg_actual_date
                      as reg_actual_date,
-                  dealsecurity_act_shist_14.deal_back_ref as deal_back_ref,
-                  issuesecurity_act_sdim_16.issuesecurity_series
+                  dealsecurity_act_14.deal_back_ref as deal_back_ref,
+                  issuesecurity_act_16.issuesecurity_series
                      as issuesecurity_series,
-                  issuesecurity_act_sdim_16.isin as isin,
-                  dealsecurity_act_shist_14.security_cnt as security_cnt,
-                  dealsecurity_act_shist_14.deal_cur_amt as deal_cur_old_amt,
-                  dealsecurity_act_shist_14.deal_couponaccount_cur_amt
+                  issuesecurity_act_16.isin as isin,
+                  dealsecurity_act_14.security_cnt as security_cnt,
+                  dealsecurity_act_14.deal_cur_amt as deal_cur_old_amt,
+                  dealsecurity_act_14.deal_couponaccount_cur_amt
                      as deal_couponacct_cur_old_amt,
-                  dealsecurity_act_shist_14.pay_amt as pay_old_amt,
+                  dealsecurity_act_14.pay_amt as pay_old_amt,
                   convsumrealiz.deal_rur_amt /
-                  sum (dealsecurity_act_shist_14.security_cnt)
+                  sum (dealsecurity_act_14.security_cnt)
                      over (partition by convsumrealiz.link_ncode) *
-                  dealsecurity_act_shist_14.security_cnt /
-                  exchangexrate_stat_15.rate
+                  dealsecurity_act_14.security_cnt /
+                  exchangexrate_15.rate
                      as deal_cur_amt,
                   convsumrealiz.deal_couponaccount_rur_amt /
-                  sum (dealsecurity_act_shist_14.security_cnt)
+                  sum (dealsecurity_act_14.security_cnt)
                      over (partition by convsumrealiz.link_ncode) *
-                  dealsecurity_act_shist_14.security_cnt /
-                  exchangexrate_stat_15.rate
+                  dealsecurity_act_14.security_cnt /
+                  exchangexrate_15.rate
                      as deal_couponaccount_cur_amt,
                   convsumrealiz.pay_rur_amt /
-                  sum (dealsecurity_act_shist_14.security_cnt)
+                  sum (dealsecurity_act_14.security_cnt)
                      over (partition by convsumrealiz.link_ncode) *
-                  dealsecurity_act_shist_14.security_cnt /
-                  exchangexrate_stat_15.rate
+                  dealsecurity_act_14.security_cnt /
+                  exchangexrate_15.rate
                      as pay_cur_amt,
                   convsumrealiz.revaluation_rur_amt /
-                  sum (dealsecurity_act_shist_14.security_cnt)
+                  sum (dealsecurity_act_14.security_cnt)
                      over (partition by convsumrealiz.link_ncode) *
-                  dealsecurity_act_shist_14.security_cnt
+                  dealsecurity_act_14.security_cnt
                      as revaluation_rur_amt,
                   convsumrealiz.comission_rur_amt /
-                  sum (dealsecurity_act_shist_14.security_cnt)
+                  sum (dealsecurity_act_14.security_cnt)
                      over (partition by convsumrealiz.link_ncode) *
-                  dealsecurity_act_shist_14.security_cnt
+                  dealsecurity_act_14.security_cnt
                      as comission_rur_amt
            from   (select convdeal.link_ncode as link_ncode,
                           sum (
-                             dealsecurity_act_shist_6.deal_cur_amt /
-                             dealsecurity_act_shist_6.security_cnt *
-                             taxpair_stran_4.security_cnt *
-                             exchangexrate_stat_7.rate)
+                             dealsecurity_act_6.deal_cur_amt /
+                             dealsecurity_act_6.security_cnt *
+                             taxpair_4.security_cnt *
+                             exchangexrate_7.rate)
                              as deal_rur_amt,
                           sum (
-                             dealsecurity_act_shist_6.deal_couponaccount_cur_amt /
-                             dealsecurity_act_shist_6.security_cnt *
-                             taxpair_stran_4.security_cnt *
-                             exchangexrate_stat_7.rate)
+                             dealsecurity_act_6.deal_couponaccount_cur_amt /
+                             dealsecurity_act_6.security_cnt *
+                             taxpair_4.security_cnt *
+                             exchangexrate_7.rate)
                              as deal_couponaccount_rur_amt,
                           sum (
-                             dealsecurity_act_shist_6.pay_amt /
-                             dealsecurity_act_shist_6.security_cnt *
-                             taxpair_stran_4.security_cnt *
-                             exchangexrate_stat_7.rate)
+                             dealsecurity_act_6.pay_amt /
+                             dealsecurity_act_6.security_cnt *
+                             taxpair_4.security_cnt *
+                             exchangexrate_7.rate)
                              as pay_rur_amt,
                           sum (
                              acctrevaluation2005_lstat_9.revaluation_cur_amt /
-                             dealsecurity_act_shist_6.security_cnt *
-                             taxpair_stran_4.security_cnt *
-                             exchangexrate_stat_10.rate)
+                             dealsecurity_act_6.security_cnt *
+                             taxpair_4.security_cnt *
+                             exchangexrate_10.rate)
                              as revaluation_rur_amt,
                           nvl (
                              sum (
-                                dealoperacct_act_tran_11.opernotvat_cur_amt *
-                                exchangexrate_stat_12.rate) /
-                             dealsecurity_act_shist_6.security_deal_cnt *
-                             taxpair_stran_4.security_cnt,
+                                dealoperacct_act_11.opernotvat_cur_amt *
+                                exchangexrate_12.rate) /
+                             dealsecurity_act_6.security_deal_cnt *
+                             taxpair_4.security_cnt,
                              0)
                              as comission_rur_amt
                    from   (select exp_pre_convdeal.allpair_flag
@@ -192,24 +173,24 @@ insert into dmfrtax.convpurchase_proc (deal_back_ref,
                                      as security_cnt,
                                   exp_pre_convdeal.security_pair_cnt
                                      as security_pair_cnt
-                           from   (select dealsecurity_act_shist_2.deal_uk
+                           from   (select dealsecurity_act_2.deal_uk
                                              as deal_uk,
-                                          dealsecurity_act_shist_2.issuesecurity_uk
+                                          dealsecurity_act_2.issuesecurity_uk
                                              as issuesecurity_uk,
-                                          dealconversion_mhist_1.link_ncode
+                                          dealconversion_1.link_ncode
                                              as link_ncode,
-                                          dealsecurity_act_shist_2.security_cnt
+                                          dealsecurity_act_2.security_cnt
                                              as security_cnt,
                                           nvl (
                                              sum (
-                                                taxpair_stran_3.security_cnt),
+                                                taxpair_3.security_cnt),
                                              0)
                                              as security_pair_cnt,
                                           case
-                                             when dealsecurity_act_shist_2.security_cnt >
+                                             when dealsecurity_act_2.security_cnt >
                                                      nvl (
                                                         sum (
-                                                           taxpair_stran_3.security_cnt),
+                                                           taxpair_3.security_cnt),
                                                         0)
                                              then
                                                 'N'
@@ -220,10 +201,10 @@ insert into dmfrtax.convpurchase_proc (deal_back_ref,
                                           count (
                                              case
                                                 when (case
-                                                         when dealsecurity_act_shist_2.security_cnt >
+                                                         when dealsecurity_act_2.security_cnt >
                                                                  nvl (
                                                                     sum (
-                                                                       taxpair_stran_3.security_cnt),
+                                                                       taxpair_3.security_cnt),
                                                                     0)
                                                          then
                                                             'N'
@@ -236,159 +217,150 @@ insert into dmfrtax.convpurchase_proc (deal_back_ref,
                                                    null
                                              end)
                                           over (
-                                             partition by dealconversion_mhist_1.link_ncode)
+                                             partition by dealconversion_1.link_ncode)
                                              as filter
-                                   from   dmfrtax.dealconversion_mhist dealconversion_mhist_1
+                                   from   dm_taxs.dealconversion dealconversion_1
                                           inner join
-                                          dmfrtax.dealsecurity_act_shist dealsecurity_act_shist_2
-                                             on dealconversion_mhist_1.deal_uk =
-                                                   dealsecurity_act_shist_2.deal_uk and
-                                                dealsecurity_act_shist_2.dealdirection_uk =
+                                          dm_taxs.dealsecurity_act dealsecurity_act_2
+                                             on dealconversion_1.deal_uk =
+                                                   dealsecurity_act_2.deal_uk and
+                                                dealsecurity_act_2.dealdirection_uk =
                                                    2
                                           left outer join
-                                          dmfrtax.taxpair_stran taxpair_stran_3
-                                             on dealsecurity_act_shist_2.issuesecurity_uk =
-                                                   taxpair_stran_3.issuesecurity_remove_uk and
-                                                dealsecurity_act_shist_2.deal_uk =
-                                                   taxpair_stran_3.deal_remove_uk and
-                                                taxpair_stran_3.deleted_flag =
+                                          dm_taxs.taxpair taxpair_3
+                                             on dealsecurity_act_2.issuesecurity_uk =
+                                                   taxpair_3.issuesecurity_remove_uk and
+                                                dealsecurity_act_2.deal_uk =
+                                                   taxpair_3.deal_remove_uk and
+                                                taxpair_3.deleted_flag =
                                                    'N'
-                                   where  (dealconversion_mhist_1.deleted_flag =
+                                   where  (dealconversion_1.deleted_flag =
                                               'N') and
-                                          (dealconversion_mhist_1.finished_flag =
+                                          (dealconversion_1.finished_flag =
                                               'N')
-                                   group by dealconversion_mhist_1.link_ncode,
-                                            dealsecurity_act_shist_2.issuesecurity_uk,
-                                            dealsecurity_act_shist_2.deal_uk,
-                                            dealsecurity_act_shist_2.security_cnt)
+                                   group by dealconversion_1.link_ncode,
+                                            dealsecurity_act_2.issuesecurity_uk,
+                                            dealsecurity_act_2.deal_uk,
+                                            dealsecurity_act_2.security_cnt)
                                   exp_pre_convdeal
                            where  (exp_pre_convdeal.filter = 0)) convdeal
-                          inner join dmfrtax.taxpair_stran taxpair_stran_4
+                          inner join dm_taxs.taxpair taxpair_4
                              on convdeal.issuesecurity_uk =
-                                   taxpair_stran_4.issuesecurity_remove_uk and
+                                   taxpair_4.issuesecurity_remove_uk and
                                 convdeal.deal_uk =
-                                   taxpair_stran_4.deal_remove_uk and
-                                taxpair_stran_4.deleted_flag = 'N'
-                          inner join dmfrtax.taxlot_sdim taxlot_sdim_5
-                             on taxpair_stran_4.taxlot_uk = taxlot_sdim_5.uk and
-                                taxlot_sdim_5.deleted_flag = 'N'
+                                   taxpair_4.deal_remove_uk and
+                                taxpair_4.deleted_flag = 'N'
+                          inner join dm_taxs.taxlot taxlot_5
+                             on taxpair_4.taxlot_uk = taxlot_5.uk and
+                                taxlot_5.deleted_flag = 'N'
                           inner join
-                          dmfrtax.dealsecurity_act_shist dealsecurity_act_shist_6
-                             on taxlot_sdim_5.deal_uk =
-                                   dealsecurity_act_shist_6.deal_uk and
-                                taxlot_sdim_5.issuesecurity_uk =
-                                   dealsecurity_act_shist_6.issuesecurity_uk
+                          dm_taxs.dealsecurity_act dealsecurity_act_6
+                             on taxlot_5.deal_uk =
+                                   dealsecurity_act_6.deal_uk and
+                                taxlot_5.issuesecurity_uk =
+                                   dealsecurity_act_6.issuesecurity_uk
                           inner join
-                          dmfr.exchangexrate_stat exchangexrate_stat_7
-                             on exchangexrate_stat_7.currency_to_uk =
-                                   dealsecurity_act_shist_6.currency_uk and
-                                exchangexrate_stat_7.value_day =
-                                   taxlot_sdim_5.start_date and
-                                exchangexrate_stat_7.deleted_flag = 'N' and
-                                exchangexrate_stat_7.xratetype_uk = 1 and
-                                exchangexrate_stat_7.currency_from_uk =
+                          main.exchangexrate exchangexrate_7
+                             on exchangexrate_7.currency_to_uk =
+                                   dealsecurity_act_6.currency_uk and
+                                exchangexrate_7.value_day =
+                                   taxlot_5.start_date and
+                                exchangexrate_7.deleted_flag = 'N' and
+                                exchangexrate_7.xratetype_uk = 1 and
+                                exchangexrate_7.currency_from_uk =
                                    5205611685
                           inner join
-                          dmfr.exchangexrate_stat exchangexrate_stat_8
-                             on exchangexrate_stat_8.currency_to_uk =
-                                   dealsecurity_act_shist_6.currency_pay_uk and
-                                exchangexrate_stat_8.value_day =
-                                   taxlot_sdim_5.start_date and
-                                exchangexrate_stat_8.deleted_flag = 'N' and
-                                exchangexrate_stat_8.xratetype_uk = 1 and
-                                exchangexrate_stat_8.currency_from_uk =
+                          main.exchangexrate exchangexrate_8
+                             on exchangexrate_8.currency_to_uk =
+                                   dealsecurity_act_6.currency_pay_uk and
+                                exchangexrate_8.value_day =
+                                   taxlot_5.start_date and
+                                exchangexrate_8.deleted_flag = 'N' and
+                                exchangexrate_8.xratetype_uk = 1 and
+                                exchangexrate_8.currency_from_uk =
                                    5205611685
                           left outer join
-                          dmfrtax.acctrevaluation2005_lstat acctrevaluation2005_lstat_9
-                             on dealsecurity_act_shist_6.deal_uk =
+                          dm_taxs.acctrevaluation2005_lstat acctrevaluation2005_lstat_9
+                             on dealsecurity_act_6.deal_uk =
                                    acctrevaluation2005_lstat_9.deal_uk and
                                 acctrevaluation2005_lstat_9.deleted_flag =
                                    'N'
                           left outer join
-                          dmfr.exchangexrate_stat exchangexrate_stat_10
-                             on exchangexrate_stat_10.currency_to_uk =
+                          main.exchangexrate exchangexrate_10
+                             on exchangexrate_10.currency_to_uk =
                                    acctrevaluation2005_lstat_9.currency_uk and
-                                exchangexrate_stat_10.value_day =
-                                   taxlot_sdim_5.start_date and
-                                exchangexrate_stat_10.deleted_flag = 'N' and
-                                exchangexrate_stat_10.xratetype_uk = 1 and
-                                exchangexrate_stat_10.currency_from_uk =
+                                exchangexrate_10.value_day =
+                                   taxlot_5.start_date and
+                                exchangexrate_10.deleted_flag = 'N' and
+                                exchangexrate_10.xratetype_uk = 1 and
+                                exchangexrate_10.currency_from_uk =
                                    5205611685
                           left outer join
-                          dmfrtax.dealoperacct_act_tran dealoperacct_act_tran_11
-                             on dealsecurity_act_shist_6.deal_uk =
-                                   dealoperacct_act_tran_11.deal_uk and
-                                dealsecurity_act_shist_6.issuesecurity_uk =
-                                   dealoperacct_act_tran_11.issuesecurity_uk and
-                                dealoperacct_act_tran_11.accountingevent_uk in (10,
+                          dm_taxs.dealoperacct_act dealoperacct_act_11
+                             on dealsecurity_act_6.deal_uk =
+                                   dealoperacct_act_11.deal_uk and
+                                dealsecurity_act_6.issuesecurity_uk =
+                                   dealoperacct_act_11.issuesecurity_uk and
+                                dealoperacct_act_11.accountingevent_uk in (10,
                                                                                 11,
                                                                                 12,
                                                                                 13)
                           inner join
-                          dmfr.exchangexrate_stat exchangexrate_stat_12
-                             on exchangexrate_stat_12.currency_to_uk =
+                          main.exchangexrate exchangexrate_12
+                             on exchangexrate_12.currency_to_uk =
                                    acctrevaluation2005_lstat_9.currency_uk and
-                                exchangexrate_stat_12.value_day =
-                                   taxlot_sdim_5.start_date and
-                                exchangexrate_stat_12.deleted_flag = 'N' and
-                                exchangexrate_stat_12.xratetype_uk = 1 and
-                                exchangexrate_stat_12.currency_from_uk =
+                                exchangexrate_12.value_day =
+                                   taxlot_5.start_date and
+                                exchangexrate_12.deleted_flag = 'N' and
+                                exchangexrate_12.xratetype_uk = 1 and
+                                exchangexrate_12.currency_from_uk =
                                    5205611685
                    group by convdeal.link_ncode,
-                            dealsecurity_act_shist_6.security_deal_cnt,
-                            taxpair_stran_4.security_cnt) convsumrealiz
+                            dealsecurity_act_6.security_deal_cnt,
+                            taxpair_4.security_cnt) convsumrealiz
                   inner join
-                  dmfrtax.dealconversion_mhist dealconversion_mhist_13
+                  dm_taxs.dealconversion dealconversion_13
                      on convsumrealiz.link_ncode =
-                           dealconversion_mhist_13.link_ncode and
-                        dealconversion_mhist_13.deleted_flag = 'N' and
-                        dealconversion_mhist_13.finished_flag = 'Y'
+                           dealconversion_13.link_ncode and
+                        dealconversion_13.deleted_flag = 'N' and
+                        dealconversion_13.finished_flag = 'Y'
                   inner join
-                  dmfrtax.dealsecurity_act_shist dealsecurity_act_shist_14
-                     on dealconversion_mhist_13.deal_uk =
-                           dealsecurity_act_shist_14.deal_uk and
-                        dealsecurity_act_shist_14.dealdirection_uk = 1
-                  inner join dmfr.exchangexrate_stat exchangexrate_stat_15
-                     on exchangexrate_stat_15.currency_to_uk =
-                           dealsecurity_act_shist_14.currency_uk and
-                        exchangexrate_stat_15.value_day =
-                           dealsecurity_act_shist_14.reg_actual_date and
-                        exchangexrate_stat_15.deleted_flag = 'N' and
-                        exchangexrate_stat_15.xratetype_uk = 1 and
-                        exchangexrate_stat_15.currency_from_uk = 5205611685
+                  dm_taxs.dealsecurity_act dealsecurity_act_14
+                     on dealconversion_13.deal_uk =
+                           dealsecurity_act_14.deal_uk and
+                        dealsecurity_act_14.dealdirection_uk = 1
+                  inner join main.exchangexrate exchangexrate_15
+                     on exchangexrate_15.currency_to_uk =
+                           dealsecurity_act_14.currency_uk and
+                        exchangexrate_15.value_day =
+                           dealsecurity_act_14.reg_actual_date and
+                        exchangexrate_15.deleted_flag = 'N' and
+                        exchangexrate_15.xratetype_uk = 1 and
+                        exchangexrate_15.currency_from_uk = 5205611685
                   inner join
-                  dmfrtax.issuesecurity_act_sdim issuesecurity_act_sdim_16
-                     on dealsecurity_act_shist_14.issuesecurity_uk =
-                           issuesecurity_act_sdim_16.uk) convpurchase_proc
-    Rows processed:    0
-    Execution time:    00:00:00,620
-2015-10-26_13:56:29,505    Activity started                Поток данных Закрытие записаей в dealconversionresult_sstat (DataflowDF_DEALCONVERSIONRESULT_SSTAT_DELETE, Поток данных Закрытие записаей в dealconversionresult_sstat, )
-2015-10-26_13:56:29,548    Activity succeeded                Поток данных Закрытие записаей в dealconversionresult_sstat (DataflowDF_DEALCONVERSIONRESULT_SSTAT_DELETE, Поток данных Закрытие записаей в dealconversionresult_sstat, )    Query text:
+                  dm_taxs.issuesecurity_act issuesecurity_act_16
+                     on dealsecurity_act_14.issuesecurity_uk =
+                           issuesecurity_act_16.uk) convpurchase_proc
 ------------------
-merge into dmfrtax.dealconversionresult_sstat dealconversionresult_sstat
-using  (select dealconversionresult_sstat_1.xk as xk
-        from   dmfrtax.dealconversionresult_sstat dealconversionresult_sstat_1
-               inner join dmfrtax.convpurchase_proc convpurchase_proc_2
-                  on dealconversionresult_sstat_1.deal_uk =
+merge into dm_taxs.dealconversionresult dealconversionresult
+using  (select dealconversionresult_1.xk as xk
+        from   dm_taxs.dealconversionresult dealconversionresult_1
+               inner join dm_taxs.convpurchase_proc convpurchase_proc_2
+                  on dealconversionresult_1.deal_uk =
                         convpurchase_proc_2.deal_uk and
-                     dealconversionresult_sstat_1.issuesecurity_uk =
+                     dealconversionresult_1.issuesecurity_uk =
                         convpurchase_proc_2.issuesecurity_uk
-        where  (dealconversionresult_sstat_1.deleted_flag = 'N')) exp_key
-on     (dealconversionresult_sstat.xk = exp_key.xk)
+        where  (dealconversionresult_1.deleted_flag = 'N')) exp_key
+on     (dealconversionresult.xk = exp_key.xk)
 when matched
 then
    update set
-      dealconversionresult_sstat.as_of_day      =
+      dealconversionresult.as_of_day      =
          to_date ('26-10-2015 13-56-26', 'DD-MM-YYYY HH24-MI-SS'),
-      dealconversionresult_sstat.deleted_flag = 'Y',
-      dealconversionresult_sstat.job_update   = 32098
-
-    Rows processed:    0
-    Execution time:    00:00:00,043
-2015-10-26_13:56:29,589    Activity started                Поток данных Загрузка dealconversionresult_sstat (DataflowDF_LOAD_DEALCONVERSIONRESULT_SSTAT, Поток данных Загрузка dealconversionresult_sstat, )
-2015-10-26_13:56:29,657    Activity succeeded                Поток данных Загрузка dealconversionresult_sstat (DataflowDF_LOAD_DEALCONVERSIONRESULT_SSTAT, Поток данных Загрузка dealconversionresult_sstat, )    Query text:
+      dealconversionresult.deleted_flag = 'Y',
+      dealconversionresult.job_update   = 32098
 ------------------
-insert into dmfrtax.dealconversionresult_sstat (value_day,
+insert into dm_taxs.dealconversionresult (value_day,
                                                 xk,
                                                 as_of_day,
                                                 deleted_flag,
@@ -405,7 +377,7 @@ insert into dmfrtax.dealconversionresult_sstat (value_day,
                                                 comission_rur_amt,
                                                 revaluation_rur_amt)
    select convpurchase_proc_1.oper_date as value_day,
-          dmfrtax.s_dealconversionresult_sstat.nextval as xk,
+          dm_taxs.s_dealconversionresult.nextval as xk,
           to_date ('26-10-2015 13-56-26', 'DD-MM-YYYY HH24-MI-SS')
              as as_of_day,
           'N' as deleted_flag,
@@ -422,13 +394,9 @@ insert into dmfrtax.dealconversionresult_sstat (value_day,
           convpurchase_proc_1.pay_cur_amt as pay_amt,
           convpurchase_proc_1.comission_rur_amt as comission_rur_amt,
           convpurchase_proc_1.revaluation_rur_amt as revaluation_rur_amt
-   from   dmfrtax.convpurchase_proc convpurchase_proc_1
-    Rows processed:    0
-    Execution time:    00:00:00,068
-2015-10-26_13:56:29,689    Activity started                Поток данных Загрузка dealsecurity_mark_mtran (DataflowDF_LOAD_DEALSECURITY_MARK_MTRAN, Поток данных Загрузка dealsecurity_mark_mtran, )
-2015-10-26_13:56:29,826    Activity succeeded                Поток данных Загрузка dealsecurity_mark_mtran (DataflowDF_LOAD_DEALSECURITY_MARK_MTRAN, Поток данных Загрузка dealsecurity_mark_mtran, )    Query text:
+   from   dm_taxs.convpurchase_proc convpurchase_proc_1
 ------------------
-insert into dmfrtax.dealsecurity_mark_mtran (calcprice_old_amt,
+insert into dm_taxs.dealsecurity_mark (calcprice_old_amt,
                                              fiss_old_flag,
                                              pay_actual_old_date,
                                              pay_old_amt,
@@ -519,7 +487,7 @@ insert into dmfrtax.dealsecurity_mark_mtran (calcprice_old_amt,
           exp_res.reg_actual_old_date as reg_actual_old_date,
           exp_res.reg_actual_mark_date as reg_actual_mark_date,
           exp_res.value_day as value_day,
-          dmfrtax.s_dealsecurity_mark_mtran.nextval as pk,
+          dm_taxs.s_dealsecurity_mark.nextval as pk,
           exp_res.deleted_flag as deleted_flag,
           exp_res.deal_uk as deal_uk,
           exp_res.deal_mark_ref as deal_mark_ref,
@@ -554,12 +522,12 @@ insert into dmfrtax.dealsecurity_mark_mtran (calcprice_old_amt,
    from   (select 'akleyn' as author_update_name,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.calcprice_mark_amt
+                     else dealsecurity_mark_2.calcprice_mark_amt
                   end
                      as calcprice_mark_amt,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.calcprice_old_amt
+                     else dealsecurity_mark_2.calcprice_old_amt
                   end
                      as calcprice_old_amt,
                   convpurchase_proc_1.currency_issue_uk as currency_issue_uk,
@@ -573,53 +541,53 @@ insert into dmfrtax.dealsecurity_mark_mtran (calcprice_old_amt,
                   convpurchase_proc_1.deal_cur_old_amt as deal_cur_old_amt,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.deal_mark_ref
+                     else dealsecurity_mark_2.deal_mark_ref
                   end
                      as deal_mark_ref,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.deal_old_ref
+                     else dealsecurity_mark_2.deal_old_ref
                   end
                      as deal_old_ref,
                   convpurchase_proc_1.deal_uk as deal_uk,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.dealemission_mark_flag
+                     else dealsecurity_mark_2.dealemission_mark_flag
                   end
                      as dealemission_mark_flag,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.dealemission_old_flag
+                     else dealsecurity_mark_2.dealemission_old_flag
                   end
                      as dealemission_old_flag,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.dealfict_mark_flag
+                     else dealsecurity_mark_2.dealfict_mark_flag
                   end
                      as dealfict_mark_flag,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.dealfict_old_flag
+                     else dealsecurity_mark_2.dealfict_old_flag
                   end
                      as dealfict_old_flag,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.dealmark_mark_description
+                     else dealsecurity_mark_2.dealmark_mark_description
                   end
                      as dealmark_mark_description,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.dealmark_old_description
+                     else dealsecurity_mark_2.dealmark_old_description
                   end
                      as dealmark_old_description,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.dealrepayment_mark_flag
+                     else dealsecurity_mark_2.dealrepayment_mark_flag
                   end
                      as dealrepayment_mark_flag,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.dealrepayment_old_flag
+                     else dealsecurity_mark_2.dealrepayment_old_flag
                   end
                      as dealrepayment_old_flag,
                   'N' as deleted_flag,
@@ -635,12 +603,12 @@ insert into dmfrtax.dealsecurity_mark_mtran (calcprice_old_amt,
                      as final_mark_flag,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.fiss_mark_flag
+                     else dealsecurity_mark_2.fiss_mark_flag
                   end
                      as fiss_mark_flag,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.fiss_old_flag
+                     else dealsecurity_mark_2.fiss_old_flag
                   end
                      as fiss_old_flag,
                   convpurchase_proc_1.issuesecurity_uk as issuesecurity_uk,
@@ -648,74 +616,74 @@ insert into dmfrtax.dealsecurity_mark_mtran (calcprice_old_amt,
                      as manual_mark_flag,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.pay_actual_mark_date
+                     else dealsecurity_mark_2.pay_actual_mark_date
                   end
                      as pay_actual_mark_date,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.pay_actual_old_date
+                     else dealsecurity_mark_2.pay_actual_old_date
                   end
                      as pay_actual_old_date,
                   convpurchase_proc_1.pay_cur_amt as pay_mark_amt,
                   convpurchase_proc_1.pay_old_amt as pay_old_amt,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.pay_plan_mark_date
+                     else dealsecurity_mark_2.pay_plan_mark_date
                   end
                      as pay_plan_mark_date,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.pay_plan_old_date
+                     else dealsecurity_mark_2.pay_plan_old_date
                   end
                      as pay_plan_old_date,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.pfi_mark_ccode
+                     else dealsecurity_mark_2.pfi_mark_ccode
                   end
                      as pfi_mark_ccode,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.pfi_old_ccode
+                     else dealsecurity_mark_2.pfi_old_ccode
                   end
                      as pfi_old_ccode,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.quotation_mark_amt
+                     else dealsecurity_mark_2.quotation_mark_amt
                   end
                      as quotation_mark_amt,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.quotation_mark_date
+                     else dealsecurity_mark_2.quotation_mark_date
                   end
                      as quotation_mark_date,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.quotation_mark_rate
+                     else dealsecurity_mark_2.quotation_mark_rate
                   end
                      as quotation_mark_rate,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.quotation_old_amt
+                     else dealsecurity_mark_2.quotation_old_amt
                   end
                      as quotation_old_amt,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.quotation_old_date
+                     else dealsecurity_mark_2.quotation_old_date
                   end
                      as quotation_old_date,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.quotation_old_rate
+                     else dealsecurity_mark_2.quotation_old_rate
                   end
                      as quotation_old_rate,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.quotationsrc_mark_uk
+                     else dealsecurity_mark_2.quotationsrc_mark_uk
                   end
                      as quotationsrc_mark_uk,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.quotationsrc_old_uk
+                     else dealsecurity_mark_2.quotationsrc_old_uk
                   end
                      as quotationsrc_old_uk,
                   case
@@ -723,7 +691,7 @@ insert into dmfrtax.dealsecurity_mark_mtran (calcprice_old_amt,
                      then
                         null
                      else
-                        dealsecurity_mark_mtran_2.receivedcoupon_cur_mark_amt
+                        dealsecurity_mark_2.receivedcoupon_cur_mark_amt
                   end
                      as receivedcoupon_cur_mark_amt,
                   case
@@ -731,92 +699,88 @@ insert into dmfrtax.dealsecurity_mark_mtran (calcprice_old_amt,
                      then
                         null
                      else
-                        dealsecurity_mark_mtran_2.receivedcoupon_cur_old_amt
+                        dealsecurity_mark_2.receivedcoupon_cur_old_amt
                   end
                      as receivedcoupon_cur_old_amt,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.reg_actual_mark_date
+                     else dealsecurity_mark_2.reg_actual_mark_date
                   end
                      as reg_actual_mark_date,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.reg_actual_old_date
+                     else dealsecurity_mark_2.reg_actual_old_date
                   end
                      as reg_actual_old_date,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.reg_plan_mark_date
+                     else dealsecurity_mark_2.reg_plan_mark_date
                   end
                      as reg_plan_mark_date,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.reg_plan_old_date
+                     else dealsecurity_mark_2.reg_plan_old_date
                   end
                      as reg_plan_old_date,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.reversal_mark_description
+                     else dealsecurity_mark_2.reversal_mark_description
                   end
                      as reversal_mark_description,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.reversal_old_description
+                     else dealsecurity_mark_2.reversal_old_description
                   end
                      as reversal_old_description,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.security_mark_cnt
+                     else dealsecurity_mark_2.security_mark_cnt
                   end
                      as security_mark_cnt,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.security_old_cnt
+                     else dealsecurity_mark_2.security_old_cnt
                   end
                      as security_old_cnt,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.totaldeviation_mark_amt
+                     else dealsecurity_mark_2.totaldeviation_mark_amt
                   end
                      as totaldeviation_mark_amt,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.totaldeviation_old_amt
+                     else dealsecurity_mark_2.totaldeviation_old_amt
                   end
                      as totaldeviation_old_amt,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.trademode_quot_mark_uk
+                     else dealsecurity_mark_2.trademode_quot_mark_uk
                   end
                      as trademode_quot_mark_uk,
                   case
                      when union_tmp.tmp = 1 then null
-                     else dealsecurity_mark_mtran_2.trademode_quot_old_uk
+                     else dealsecurity_mark_2.trademode_quot_old_uk
                   end
                      as trademode_quot_old_uk,
                   sysdate as update_date,
                   sysdate as value_day
-           from   dmfrtax.convpurchase_proc convpurchase_proc_1
+           from   dm_taxs.convpurchase_proc convpurchase_proc_1
                   left outer join
-                  dmfrtax.dealsecurity_mark_mtran dealsecurity_mark_mtran_2
+                  dm_taxs.dealsecurity_mark dealsecurity_mark_2
                      on convpurchase_proc_1.deal_uk =
-                           dealsecurity_mark_mtran_2.deal_uk and
+                           dealsecurity_mark_2.deal_uk and
                         convpurchase_proc_1.issuesecurity_uk =
-                           dealsecurity_mark_mtran_2.issuesecurity_uk and
-                        dealsecurity_mark_mtran_2.deleted_flag = 'N' and
-                        dealsecurity_mark_mtran_2.final_mark_flag = 'Y'
+                           dealsecurity_mark_2.issuesecurity_uk and
+                        dealsecurity_mark_2.deleted_flag = 'N' and
+                        dealsecurity_mark_2.final_mark_flag = 'Y'
                   inner join
                   (select tmp as tmp
                    from   ( (select 1 as tmp from dual)
                            union all
                            (select 2 as tmp from dual)) union_tmp) union_tmp
                      on 1 = 1) exp_res
-    Rows processed:    0
-    Execution time:    00:00:00,137
-2015-10-26_13:56:29,869    Activity started                Поток данных Загрузка dealoperacct_mark_mtran (DataflowDF_LOAD_DEALOPERACCT_MARK_MTRAN, Поток данных Загрузка dealoperacct_mark_mtran, )
-2015-10-26_13:56:34,113    Activity succeeded                Поток данных Загрузка dealoperacct_mark_mtran (DataflowDF_LOAD_DEALOPERACCT_MARK_MTRAN, Поток данных Загрузка dealoperacct_mark_mtran, )    Query text:
 ------------------
-insert into dmfrtax.dealoperacct_mark_mtran (dealoperacct_start_date,
+insert into dm_taxs.dealoperacct_mark (dealoperacct_start_date,
                                              author_update_name,
                                              update_date,
                                              dealoperacct_value_day,
@@ -841,7 +805,7 @@ insert into dmfrtax.dealoperacct_mark_mtran (dealoperacct_start_date,
           exp_res.update_date as update_date,
           exp_res.dealoperacct_value_day as dealoperacct_value_day,
           exp_res.value_day as value_day,
-          dmfrtax.s_dealoperacct_mark_mtran.nextval as pk,
+          dm_taxs.s_dealoperacct_mark.nextval as pk,
           exp_res.deleted_flag as deleted_flag,
           exp_res.description as description,
           exp_res.manual_mark_flag as manual_mark_flag,
@@ -856,14 +820,14 @@ insert into dmfrtax.dealoperacct_mark_mtran (dealoperacct_start_date,
           exp_res.vat_cur_mark_amt as vat_cur_mark_amt,
           exp_res.vat_cur_old_amt as vat_cur_old_amt,
           exp_res.currency_uk as currency_uk
-   from   (select dealoperacct_act_tran_2.accountingevent_uk
+   from   (select dealoperacct_act_2.accountingevent_uk
                      as accountingevent_uk,
                   'akleyn' as author_update_name,
-                  dealoperacct_act_tran_2.currency_uk as currency_uk,
-                  dealoperacct_act_tran_2.deal_uk as deal_uk,
-                  dealoperacct_act_tran_2.start_date
+                  dealoperacct_act_2.currency_uk as currency_uk,
+                  dealoperacct_act_2.deal_uk as deal_uk,
+                  dealoperacct_act_2.start_date
                      as dealoperacct_start_date,
-                  dealoperacct_act_tran_2.value_day as dealoperacct_value_day,
+                  dealoperacct_act_2.value_day as dealoperacct_value_day,
                   'N' as deleted_flag,
                   case
                      when union_tmp.tmp = 1
@@ -875,58 +839,53 @@ insert into dmfrtax.dealoperacct_mark_mtran (dealoperacct_start_date,
                      as description,
                   case when union_tmp.tmp = 1 then 'N' else 'Y' end
                      as final_mark_flag,
-                  dealoperacct_act_tran_2.issuesecurity_uk
+                  dealoperacct_act_2.issuesecurity_uk
                      as issuesecurity_uk,
                   case when union_tmp.tmp = 1 then 'Y' else 'N' end
                      as manual_mark_flag,
                   0 as oper_cur_mark_amt,
-                  dealoperacct_act_tran_2.oper_cur_amt as oper_cur_old_amt,
-                  dealoperacct_act_tran_2.paydocdirection_uk
+                  dealoperacct_act_2.oper_cur_amt as oper_cur_old_amt,
+                  dealoperacct_act_2.paydocdirection_uk
                      as paydocdirection_uk,
-                  dealoperacct_act_tran_2.security_uk as security_uk,
+                  dealoperacct_act_2.security_uk as security_uk,
                   sysdate as update_date,
                   sysdate as value_day,
                   0 as vat_cur_mark_amt,
-                  dealoperacct_act_tran_2.vat_cur_amt as vat_cur_old_amt
-           from   dmfrtax.convpurchase_proc convpurchase_proc_1
+                  dealoperacct_act_2.vat_cur_amt as vat_cur_old_amt
+           from   dm_taxs.convpurchase_proc convpurchase_proc_1
                   inner join
-                  dmfrtax.dealoperacct_act_tran dealoperacct_act_tran_2
+                  dm_taxs.dealoperacct_act dealoperacct_act_2
                      on convpurchase_proc_1.deal_uk =
-                           dealoperacct_act_tran_2.deal_uk and
+                           dealoperacct_act_2.deal_uk and
                         convpurchase_proc_1.issuesecurity_uk =
-                           dealoperacct_act_tran_2.issuesecurity_uk and
-                        dealoperacct_act_tran_2.oper_cur_amt > 0 or
-                        dealoperacct_act_tran_2.vat_cur_amt > 0
+                           dealoperacct_act_2.issuesecurity_uk and
+                        dealoperacct_act_2.oper_cur_amt > 0 or
+                        dealoperacct_act_2.vat_cur_amt > 0
                   left outer join
-                  dmfrtax.dealoperacct_mark_mtran dealoperacct_mark_mtran_3
-                     on dealoperacct_mark_mtran_3.accountingevent_uk =
-                           dealoperacct_act_tran_2.accountingevent_uk and
-                        dealoperacct_mark_mtran_3.deal_uk =
-                           dealoperacct_act_tran_2.deal_uk and
-                        dealoperacct_mark_mtran_3.issuesecurity_uk =
-                           dealoperacct_act_tran_2.issuesecurity_uk and
-                        dealoperacct_mark_mtran_3.paydocdirection_uk =
-                           dealoperacct_act_tran_2.paydocdirection_uk and
-                        dealoperacct_mark_mtran_3.security_uk =
-                           dealoperacct_act_tran_2.security_uk and
-                        dealoperacct_mark_mtran_3.value_day =
-                           dealoperacct_act_tran_2.value_day and
-                        dealoperacct_mark_mtran_3.deleted_flag = 'N' and
-                        dealoperacct_mark_mtran_3.final_mark_flag = 'Y'
+                  dm_taxs.dealoperacct_mark dealoperacct_mark_3
+                     on dealoperacct_mark_3.accountingevent_uk =
+                           dealoperacct_act_2.accountingevent_uk and
+                        dealoperacct_mark_3.deal_uk =
+                           dealoperacct_act_2.deal_uk and
+                        dealoperacct_mark_3.issuesecurity_uk =
+                           dealoperacct_act_2.issuesecurity_uk and
+                        dealoperacct_mark_3.paydocdirection_uk =
+                           dealoperacct_act_2.paydocdirection_uk and
+                        dealoperacct_mark_3.security_uk =
+                           dealoperacct_act_2.security_uk and
+                        dealoperacct_mark_3.value_day =
+                           dealoperacct_act_2.value_day and
+                        dealoperacct_mark_3.deleted_flag = 'N' and
+                        dealoperacct_mark_3.final_mark_flag = 'Y'
                   inner join
                   (select tmp as tmp
                    from   ( (select 1 as tmp from dual)
                            union all
                            (select 2 as tmp from dual)) union_tmp) union_tmp
                      on 1 = 1) exp_res
- 
-    Rows processed:    0
-    Execution time:    00:00:04,244
-2015-10-26_13:56:34,152    Activity started                Поток данных Загрузка eventrecalculation_stran 1 (DataflowDF_LOAD_EVENTRECALCULATION_STRAN_1, Поток данных Загрузка eventrecalculation_stran 1, )
-2015-10-26_13:56:34,602    Activity succeeded                Поток данных Загрузка eventrecalculation_stran 1 (DataflowDF_LOAD_EVENTRECALCULATION_STRAN_1, Поток данных Загрузка eventrecalculation_stran 1, )    Query text:
 ------------------
-insert into dmfrtax.eventrecalculation_stran (xk)
-   select dmfrtax.s_eventrecalculation_stran.nextval as xk
+insert into dm_taxs.eventrecalculation (xk)
+   select dm_taxs.s_eventrecalculation.nextval as xk
    from   (select to_date ('26-10-2015 13-56-26', 'DD-MM-YYYY HH24-MI-SS')
                      as as_of_day,
                   'N' as deleted_flag,
@@ -989,7 +948,7 @@ insert into dmfrtax.eventrecalculation_stran (xk)
                   end
                      as start_value,
                   trunc (sysdate, 'DD') as value_day
-           from   dmfrtax.convpurchase_proc convpurchase_proc_1
+           from   dm_taxs.convpurchase_proc convpurchase_proc_1
                   inner join
                   (select tmp as tmp
                    from   ( (select 6 as tmp from dual)
@@ -998,14 +957,9 @@ insert into dmfrtax.eventrecalculation_stran (xk)
                            union all
                            (select 24 as tmp from dual)) union_tmp) union_tmp
                      on 1 = 1) exp_res
- 
-    Rows processed:    0
-    Execution time:    00:00:00,450
-2015-10-26_13:56:34,623    Activity started                Поток данных Загрузка eventrecalculation_stran 2 (DataflowDF_LOAD_EVENTRECALCULATION_STRAN_2, Поток данных Загрузка eventrecalculation_stran 2, )
-2015-10-26_13:56:34,756    Activity succeeded                Поток данных Загрузка eventrecalculation_stran 2 (DataflowDF_LOAD_EVENTRECALCULATION_STRAN_2, Поток данных Загрузка eventrecalculation_stran 2, )    Query text:
-------------------
-insert into dmfrtax.eventrecalculation_stran (xk)
-   select dmfrtax.s_eventrecalculation_stran.nextval as xk
+ -----------------
+insert into dm_taxs.eventrecalculation (xk)
+   select dm_taxs.s_eventrecalculation.nextval as xk
    from   (select to_date ('26-10-2015 13-56-26', 'DD-MM-YYYY HH24-MI-SS')
                      as as_of_day,
                   'N' as deleted_flag,
@@ -1026,7 +980,7 @@ insert into dmfrtax.eventrecalculation_stran (xk)
                   32098 as job_insert,
                   0 as job_update,
                   'Y' as manual_event_flag,
-                  dealoperacct_act_tran_2.tk as src_ccode,
+                  dealoperacct_act_2.tk as src_ccode,
                   'SMART ID – ' ||
                   convpurchase_proc_1.deal_back_ref ||
                   ' ISIN – ' ||
@@ -1034,35 +988,35 @@ insert into dmfrtax.eventrecalculation_stran (xk)
                   '  Номер/Серия – ' ||
                   convpurchase_proc_1.issuesecurity_series ||
                   ' Операция – ' ||
-                  accountingevent_lov_3.name ||
+                  accountingevent_3.name ||
                   ' Дата – ' ||
-                  dealoperacct_act_tran_2.value_day ||
+                  dealoperacct_act_2.value_day ||
                   ' Конвертация'
                      as src_description,
                   case
                      when union_tmp.tmp = 100
                      then
-                        to_char (dealoperacct_act_tran_2.oper_cur_amt)
+                        to_char (dealoperacct_act_2.oper_cur_amt)
                      when union_tmp.tmp = 105
                      then
-                        to_char (dealoperacct_act_tran_2.vat_cur_amt)
+                        to_char (dealoperacct_act_2.vat_cur_amt)
                      else
                         null
                   end
                      as start_value,
                   trunc (sysdate, 'DD') as value_day
-           from   dmfrtax.convpurchase_proc convpurchase_proc_1
+           from   dm_taxs.convpurchase_proc convpurchase_proc_1
                   inner join
-                  dmfrtax.dealoperacct_act_tran dealoperacct_act_tran_2
+                  dm_taxs.dealoperacct_act dealoperacct_act_2
                      on convpurchase_proc_1.deal_uk =
-                           dealoperacct_act_tran_2.deal_uk and
+                           dealoperacct_act_2.deal_uk and
                         convpurchase_proc_1.issuesecurity_uk =
-                           dealoperacct_act_tran_2.issuesecurity_uk and
-                        dealoperacct_act_tran_2.oper_cur_amt > 0 or
-                        dealoperacct_act_tran_2.vat_cur_amt > 0
-                  inner join dmfrua.accountingevent_lov accountingevent_lov_3
-                     on dealoperacct_act_tran_2.accountingevent_uk =
-                           accountingevent_lov_3.uk
+                           dealoperacct_act_2.issuesecurity_uk and
+                        dealoperacct_act_2.oper_cur_amt > 0 or
+                        dealoperacct_act_2.vat_cur_amt > 0
+                  inner join dm_01.accountingevent accountingevent_3
+                     on dealoperacct_act_2.accountingevent_uk =
+                           accountingevent_3.uk
                   inner join
                   (select tmp as tmp
                    from   ( (select 100 as tmp from dual)
@@ -1070,13 +1024,8 @@ insert into dmfrtax.eventrecalculation_stran (xk)
                            (select 105 as tmp from dual)) union_tmp)
                   union_tmp
                      on 1 = 1) exp_res
- 
-    Rows processed:    0
-    Execution time:    00:00:00,133
-2015-10-26_13:56:34,837    Activity started                Поток данных Обновление dealsecurity_act_shist (DataflowDF_DEALSECURITY_ACT_SHIST_UPDATE, Поток данных Обновление dealsecurity_act_shist, )
-2015-10-26_13:56:35,100    Activity succeeded                Поток данных Обновление dealsecurity_act_shist (DataflowDF_DEALSECURITY_ACT_SHIST_UPDATE, Поток данных Обновление dealsecurity_act_shist, )    Query text:
 ------------------
-merge into dmfrtax.dealsecurity_act_shist dealsecurity_act_shist
+merge into dm_taxs.dealsecurity_act dealsecurity_act
 using  (select to_date ('26-10-2015 13-56-26', 'DD-MM-YYYY HH24-MI-SS')
                   as as_of_day,
                convpurchase_proc_1.deal_cur_amt -
@@ -1096,62 +1045,49 @@ using  (select to_date ('26-10-2015 13-56-26', 'DD-MM-YYYY HH24-MI-SS')
                   as price_cur_amt,
                convpurchase_proc_1.deal_uk as deal_uk,
                convpurchase_proc_1.issuesecurity_uk as issuesecurity_uk
-        from   dmfrtax.convpurchase_proc convpurchase_proc_1) exp_res
-on     (exp_res.deal_uk = dealsecurity_act_shist.deal_uk and
-        exp_res.issuesecurity_uk = dealsecurity_act_shist.issuesecurity_uk)
+        from   dm_taxs.convpurchase_proc convpurchase_proc_1) exp_res
+on     (exp_res.deal_uk = dealsecurity_act.deal_uk and
+        exp_res.issuesecurity_uk = dealsecurity_act.issuesecurity_uk)
 when matched
 then
    update set
-      dealsecurity_act_shist.deal_cur_amt  = exp_res.deal_cur_amt,
-      dealsecurity_act_shist.deal_couponaccount_cur_amt      =
+      dealsecurity_act.deal_cur_amt  = exp_res.deal_cur_amt,
+      dealsecurity_act.deal_couponaccount_cur_amt      =
          exp_res.deal_couponaccount_cur_amt,
-      dealsecurity_act_shist.as_of_day     = exp_res.as_of_day,
-      dealsecurity_act_shist.job_update    = exp_res.job_update,
-      dealsecurity_act_shist.cost_cur_amt  = exp_res.cost_cur_amt,
-      dealsecurity_act_shist.price_cur_amt = exp_res.price_cur_amt,
-      dealsecurity_act_shist.pay_amt       = exp_res.pay_amt
-
-    Rows processed:    0
-    Execution time:    00:00:00,263
-2015-10-26_13:56:35,167    Activity started                Поток данных Обновление dealoperacct_act_tran (DataflowDF_DEALOPERACCT_ACT_TRAN_UPDATE, Поток данных Обновление dealoperacct_act_tran, )
-2015-10-26_13:56:35,258    Activity succeeded                Поток данных Обновление dealoperacct_act_tran (DataflowDF_DEALOPERACCT_ACT_TRAN_UPDATE, Поток данных Обновление dealoperacct_act_tran, )    Query text:
+      dealsecurity_act.as_of_day     = exp_res.as_of_day,
+      dealsecurity_act.job_update    = exp_res.job_update,
+      dealsecurity_act.cost_cur_amt  = exp_res.cost_cur_amt,
+      dealsecurity_act.price_cur_amt = exp_res.price_cur_amt,
+      dealsecurity_act.pay_amt       = exp_res.pay_amt
 ------------------
-merge into dmfrtax.dealoperacct_act_tran dealoperacct_act_tran
+merge into dm_taxs.dealoperacct_act dealoperacct_act
 using  (select convpurchase_proc_1.deal_uk as deal_uk,
                convpurchase_proc_1.issuesecurity_uk as issuesecurity_uk
-        from   dmfrtax.convpurchase_proc convpurchase_proc_1) exp_key
-on     (exp_key.deal_uk = dealoperacct_act_tran.deal_uk and
-        exp_key.issuesecurity_uk = dealoperacct_act_tran.issuesecurity_uk)
+        from   dm_taxs.convpurchase_proc convpurchase_proc_1) exp_key
+on     (exp_key.deal_uk = dealoperacct_act.deal_uk and
+        exp_key.issuesecurity_uk = dealoperacct_act.issuesecurity_uk)
 when matched
 then
    update set
-      dealoperacct_act_tran.vat_cur_amt        = 0,
-      dealoperacct_act_tran.opernotvat_cur_amt = 0,
-      dealoperacct_act_tran.oper_cur_amt       = 0
-
-    Rows processed:    0
-    Execution time:    00:00:00,091
-2015-10-26_13:56:35,302    Activity started                Поток данных Обновление dealconversion_mhist (DataflowDF_DEALCONVERSION_MHIST_UPDATE, Поток данных Обновление dealconversion_mhist, )
-2015-10-26_13:56:35,373    Activity succeeded                Поток данных Обновление dealconversion_mhist (DataflowDF_DEALCONVERSION_MHIST_UPDATE, Поток данных Обновление dealconversion_mhist, )    Query text:
+      dealoperacct_act.vat_cur_amt        = 0,
+      dealoperacct_act.opernotvat_cur_amt = 0,
+      dealoperacct_act.oper_cur_amt       = 0
 ------------------
-merge into dmfrtax.dealconversion_mhist dealconversion_mhist
-using  (select dealconversion_mhist_2.pk as pk
-        from   dmfrtax.dealconversion_mhist dealconversion_mhist_2
-        where  (dealconversion_mhist_2.deleted_flag = 'N') and
-               (dealconversion_mhist_2.finished_flag = 'N') and
-               (dealconversion_mhist_2.link_ncode in ( (select distinct
+merge into dm_taxs.dealconversion dealconversion
+using  (select dealconversion_2.pk as pk
+        from   dm_taxs.dealconversion dealconversion_2
+        where  (dealconversion_2.deleted_flag = 'N') and
+               (dealconversion_2.finished_flag = 'N') and
+               (dealconversion_2.link_ncode in ( (select distinct
                                                                convpurchase_proc_1.link_ncode
                                                                   as link_ncode
-                                                        from   dmfrtax.convpurchase_proc convpurchase_proc_1))))
+                                                        from   dm_taxs.convpurchase_proc convpurchase_proc_1))))
        exp_key
-on     (exp_key.pk = dealconversion_mhist.pk)
+on     (exp_key.pk = dealconversion.pk)
 when matched
 then
    update set
-      dealconversion_mhist.finished_flag      = 'Y',
-      dealconversion_mhist.author_update_name = 'akleyn',
-      dealconversion_mhist.update_date        =
+      dealconversion.finished_flag      = 'Y',
+      dealconversion.author_update_name = 'akleyn',
+      dealconversion.update_date        =
          to_date ('26-10-2015 13-56-26', 'DD-MM-YYYY HH24-MI-SS')
-    Rows processed:    0
-    Execution time:    00:00:00,071
-2015-10-26_13:56:35,417    Process finished                Конвертация сделок налоговой отчетности (sp_conversion_taxes, Конвертация сделок налоговой отчетности, )
