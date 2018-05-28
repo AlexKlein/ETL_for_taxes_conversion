@@ -150,7 +150,7 @@ insert into dm_taxs.convpurchase_proc (deal_back_ref,
                              exchangexrate_7.rate)
                              as pay_rur_amt,
                           sum (
-                             acctrevaluation2005_lstat_9.revaluation_cur_amt /
+                             acctrevaluation2005_9.revaluation_cur_amt /
                              dealsecurity_act_6.security_cnt *
                              taxpair_4.security_cnt *
                              exchangexrate_10.rate)
@@ -280,15 +280,15 @@ insert into dm_taxs.convpurchase_proc (deal_back_ref,
                                 exchangexrate_8.currency_from_uk =
                                    5205611685
                           left outer join
-                          dm_taxs.acctrevaluation2005_lstat acctrevaluation2005_lstat_9
+                          dm_taxs.acctrevaluation2005 acctrevaluation2005_9
                              on dealsecurity_act_6.deal_uk =
-                                   acctrevaluation2005_lstat_9.deal_uk and
-                                acctrevaluation2005_lstat_9.deleted_flag =
+                                   acctrevaluation2005_9.deal_uk and
+                                acctrevaluation2005_9.deleted_flag =
                                    'N'
                           left outer join
                           main.exchangexrate exchangexrate_10
                              on exchangexrate_10.currency_to_uk =
-                                   acctrevaluation2005_lstat_9.currency_uk and
+                                   acctrevaluation2005_9.currency_uk and
                                 exchangexrate_10.value_day =
                                    taxlot_5.start_date and
                                 exchangexrate_10.deleted_flag = 'N' and
@@ -308,7 +308,7 @@ insert into dm_taxs.convpurchase_proc (deal_back_ref,
                           inner join
                           main.exchangexrate exchangexrate_12
                              on exchangexrate_12.currency_to_uk =
-                                   acctrevaluation2005_lstat_9.currency_uk and
+                                   acctrevaluation2005_9.currency_uk and
                                 exchangexrate_12.value_day =
                                    taxlot_5.start_date and
                                 exchangexrate_12.deleted_flag = 'N' and
